@@ -1,4 +1,5 @@
 import pytest
+
 from agent_core.data_connectors.mock_data import (
     get_mock_epex_spot_data,
     get_mock_weather_data
