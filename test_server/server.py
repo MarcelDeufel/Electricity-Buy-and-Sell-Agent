@@ -12,7 +12,7 @@ SERVER_START_TIME = datetime.utcnow().replace(tzinfo=timezone.utc)
 DAY_1 = "20210626"
 DAY_2 = "20210627"
 
-def get_relevant_data(current_time: datetime):
+def get_relevant_data(current_time: datetime, order_type: str):
     current_time = current_time.replace(tzinfo=timezone.utc)
 
     # Calculate how long the server has been running
@@ -27,8 +27,8 @@ def get_relevant_data(current_time: datetime):
     # Round down current_time to the last 15-minute interval
     interval_start = current_time.replace(second=0, microsecond=0, minute=(current_time.minute // 15) * 15)
 
-    # Format filename using the rounded interval start
-    interval_filename = f"interval_data/{selected_day}_{interval_start.strftime('%H%M')}.csv"
+    # Format filename for buy and sell orders
+    interval_filename = f"interval_data/{selected_day}_{interval_start.strftime('%H%M')}_{order_type}.csv"
 
     # Check if the file exists
     if os.path.exists(interval_filename):
@@ -49,16 +49,23 @@ def get_relevant_data(current_time: datetime):
                 if filtered_offers[col].dtype.kind in 'fi':  # Numeric types (float, int)
                     filtered_offers[col].fillna(0, inplace=True)
                 else:
-                    filtered_offers[col].fillna(0, inplace=True)
+                    filtered_offers[col].fillna("", inplace=True)  # Empty string for non-numeric
 
             relevant_offers.extend(filtered_offers.to_dict(orient="records"))
 
     return relevant_offers
 
 
-# API endpoint to get current offers
-@app.get("/orders")
-def get_orders():
+# API endpoint to get current buy offers
+@app.get("/buy_orders")
+def get_buy_orders():
     current_time = datetime.utcnow().replace(tzinfo=timezone.utc)  # Ensure UTC timezone-aware datetime
-    relevant_offers = get_relevant_data(current_time)
-    return {"current_time": current_time.isoformat(), "selected_day": SERVER_START_TIME.isoformat(), "offers": relevant_offers}
+    relevant_offers = get_relevant_data(current_time, "buy")
+    return {"current_time": current_time.isoformat(), "selected_day": SERVER_START_TIME.isoformat(), "buy_offers": relevant_offers}
+
+# API endpoint to get current sell offers
+@app.get("/sell_orders")
+def get_sell_orders():
+    current_time = datetime.utcnow().replace(tzinfo=timezone.utc)  # Ensure UTC timezone-aware datetime
+    relevant_offers = get_relevant_data(current_time, "sell")
+    return {"current_time": current_time.isoformat(), "selected_day": SERVER_START_TIME.isoformat(), "sell_offers": relevant_offers}
